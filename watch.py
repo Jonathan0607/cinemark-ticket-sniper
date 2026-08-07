@@ -115,16 +115,70 @@ def fetch(url: str) -> str:
     raise RuntimeError(f"gave up fetching {url} after {len(BACKOFF_SCHEDULE)} backoffs")
 
 
-def notify(title: str, message: str) -> None:
+def notify(title: str, message: str, url: str | None = None) -> None:
     log(f"ALERT: {title}: {message}")
     with ALERT_LOG.open("a") as f:
         f.write(f"{datetime.now().isoformat()}  {title}: {message}\n")
-    hook = HERE / "notify-hook"
-    if hook.exists() and os.access(hook, os.X_OK):
-        try:
-            subprocess.run([str(hook), title, message], capture_output=True, timeout=30)
-        except Exception as e:  # noqa: BLE001: alerting must never kill the sweep
-            log(f"WARN: notify-hook failed: {e!r}")
+
+    webhook_url = os.environ.get("DISCORD_WEBHOOK")
+    if not webhook_url:
+        log("WARN: DISCORD_WEBHOOK environment variable not set; skipping Discord notification.")
+        return
+
+    book_link = url or f"{BASE}/theatres/{THEATER}"
+
+    payload = {
+        "content": "🚨 **CINEMARK TICKET ALERT** 🚨",
+        "embeds": [
+            {
+                "title": f"🎟️ {title}",
+                "color": 15158332,  # Crimson Red
+                "fields": [
+                    {
+                        "name": "🎬 Movie",
+                        "value": f"**{MOVIE_NAME}**",
+                        "inline": True,
+                    },
+                    {
+                        "name": "⏰ Showtime / Event",
+                        "value": f"**{title}**",
+                        "inline": True,
+                    },
+                    {
+                        "name": "💺 Available Seats / Details",
+                        "value": message,
+                        "inline": False,
+                    },
+                    {
+                        "name": "🔗 Direct Booking Link",
+                        "value": f"[Click Here to Book on Cinemark]({book_link})",
+                        "inline": False,
+                    },
+                ],
+                "footer": {
+                    "text": "Cinemark Ticket Sniper"
+                },
+                "timestamp": datetime.now().astimezone().isoformat(),
+            }
+        ],
+    }
+
+    try:
+        data = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(
+            webhook_url,
+            data=data,
+            headers={
+                "Content-Type": "application/json",
+                "User-Agent": UA,
+            },
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            if resp.status not in (200, 204):
+                log(f"WARN: Discord webhook returned HTTP status {resp.status}")
+    except Exception as e:  # noqa: BLE001: alerting must never kill the sweep
+        log(f"WARN: Failed to send Discord notification: {e!r}")
 
 
 def load_state() -> dict:
@@ -211,9 +265,11 @@ def sweep(state: dict, scan_dates: bool, only_dates: list[str] | None) -> None:
                 state["theater_id"] = theater_id
             state["dates"][date] = {"showtimes": shows}
             if shows and not first_run:
+                date_url = f"{BASE}/theatres/{THEATER}?showDate={date}"
                 notify(f"New date on sale: {date}",
                        f"{MOVIE_NAME} added for {date}: "
-                       + ", ".join(sorted(fmt_time(i) for i in shows.values())))
+                       + ", ".join(sorted(fmt_time(i) for i in shows.values())),
+                       url=date_url)
         log(f"date scan: tracking "
             f"{sum(1 for d in state['dates'].values() if d['showtimes'])} dates")
         save_state(state)
@@ -238,8 +294,11 @@ def sweep(state: dict, scan_dates: bool, only_dates: list[str] | None) -> None:
         openings = [b for b in seat_blocks(seats)
                     if len(b) >= PARTY_SIZE and any(s.label in fresh for s in b)]
         if openings and not first_run:
+            seat_map_url = (f"{BASE}/TicketSeatMap/?TheaterId={state['theater_id']}&ShowtimeId={sid}"
+                            f"&CinemarkMovieId={MOVIE_ID}&Showtime={iso}")
             notify(f"Seats open {date} {fmt_time(iso)}",
-                   f"{MOVIE_NAME}: " + ", ".join(fmt_block(b) for b in openings))
+                   f"{MOVIE_NAME}: " + ", ".join(fmt_block(b) for b in openings),
+                   url=seat_map_url)
         if i % 10 == 9:
             save_state(state)
     log(f"seat scan: {len(watch)} showtimes checked, {total} qualifying seats")

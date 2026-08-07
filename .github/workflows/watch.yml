@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       test_alert:
-        description: "Fire a test alert instead of sweeping (verifies the email channel)"
+        description: "Fire a test alert instead of sweeping (verifies the Discord webhook channel)"
         type: boolean
         default: false
 
@@ -16,7 +16,6 @@ concurrency:
 
 permissions:
   contents: write
-  issues: write
 
 jobs:
   sweep:
@@ -24,6 +23,7 @@ jobs:
     timeout-minutes: 45
     env:
       GH_TOKEN: ${{ github.token }}
+      DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
     steps:
       - uses: actions/checkout@v4
 
@@ -31,8 +31,8 @@ jobs:
         if: inputs.test_alert
         run: >-
           ./notify-hook "Test alert"
-          "The email channel works. A real alert reads 'Seats open 2026-08-08
-          7:00pm, F11-F12'. You can close this issue."
+          "The Discord webhook channel works. A real alert reads 'Seats open 2026-08-08
+          7:00pm, F11-F12'."
 
       - name: Run sweep
         if: ${{ !inputs.test_alert }}
