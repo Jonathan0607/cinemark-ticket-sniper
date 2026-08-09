@@ -7,7 +7,7 @@ theater = "tx-dallas/cinemark-dallas-xd-and-imax"
 
 # Movie id: on the theater page, right-click any showtime of your movie and
 # copy the link: it looks like /TicketSeatMap/?TheaterId=...&CinemarkMovieId=104867&...
-movie_id = 108919
+movie_id = 104867
 
 # Used in alert messages only.
 movie_name = "The Odyssey IMAX 70MM"
@@ -29,7 +29,7 @@ party_size = 2
 
 [pacing]
 # Cinemark rate-limits around 60-70 requests per 10 minutes per IP.
-request_gap_seconds = 6
+request_gap_seconds = 10
 
 # Probe for newly added dates every Nth sweep (seat checks happen every sweep).
 date_scan_every = 3
