@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Watch a Cinemark showing for seat openings and newly added dates.
+"""Watch a Cinemark showing for seat openings.
 
 Everything Cinemark serves is plain server-rendered HTML or loaded into the DOM,
 so a sweep fetches:
@@ -442,10 +442,6 @@ def sweep(state: dict, scan_dates: bool, only_dates: list[str] | None) -> None:
             if theater_id:
                 state["theater_id"] = theater_id
 
-            # Detect newly added showtimes (by ISO start time) for notification
-            old_isos = set(old_shows.values())
-            new_shows_added = [iso for sid, iso in shows.items() if iso not in old_isos]
-
             # Migrate cached seat records if a showtime ID regenerated for an ISO start
             old_iso_to_sid = {iso: sid for sid, iso in old_shows.items()}
             for new_sid, iso in shows.items():
@@ -455,13 +451,6 @@ def sweep(state: dict, scan_dates: bool, only_dates: list[str] | None) -> None:
 
             # Update state with fresh showtime IDs
             state["dates"][date] = {"showtimes": shows}
-
-            if new_shows_added and not first_run:
-                date_url = f"{BASE}/theatres/{THEATER}?showDate={date}"
-                notify(f"New date on sale: {date}",
-                       f"{MOVIE_NAME} added for {date}: "
-                       + ", ".join(sorted(fmt_time(i) for i in new_shows_added)),
-                       url=date_url)
 
         log(f"date scan: tracking "
             f"{sum(1 for d in state['dates'].values() if d['showtimes'])} dates")
