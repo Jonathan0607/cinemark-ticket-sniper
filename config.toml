@@ -18,10 +18,9 @@ timezone = "America/Chicago"
 
 [filters]
 # Rows you refuse to sit in (usually the neck-craning front rows).
-excluded_rows = ["A", "B", "C", "D"]
-
+excluded_rows = ["A", "B", "C", "D", "AA", "BB", "CC", "DD"]
 # Ignore showings that start outside this window (theater-local, 24h HH:MM).
-earliest_showtime = "12:00"
+earliest_showtime = "11:00"
 latest_showtime = "20:00"
 
 # Alert only when this many physically adjacent seats open up together.

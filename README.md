@@ -3,8 +3,7 @@
 Discord alerts when seats open up at a sold-out Cinemark showing.
 
 Point it at any Cinemark theater and movie, say which rows and showtimes you
-would accept, and it notifies your Discord channel when a matching seat frees up or when new
-dates go on sale. Runs on GitHub Actions or locally.
+would accept, and it notifies your Discord channel when a matching seat frees up. Runs on GitHub Actions or locally.
 
 Built to catch cancellations for The Odyssey in IMAX 70mm, which sold out
 weeks ahead at every theater that can project it. Good seats reappear all the
@@ -48,6 +47,6 @@ Cinemark's site is server-rendered, so dates, showtimes, and seat maps are all
 plain HTML. On each run, an Actions job fetches the seat map of every showing
 that passes your filters, diffs availability against the previous run (state
 is a JSON snapshot the job commits back to the repo), and on any newly opened
-seat or newly listed date it sends a POST request to your Discord webhook. The job paces itself to about six requests a minute
+seat it sends a POST request to your Discord webhook. The job paces itself to about six requests a minute
 because Cinemark rate-limits around 60-70 requests per ten minutes, so a full
 sweep takes about 20 unhurried minutes.
